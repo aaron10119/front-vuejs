@@ -1,9 +1,22 @@
 <template>
   <div id="app">
-
-    <router-view/>
+    <ListaCategorias />
+    <ListaProducts />
   </div>
 </template>
+
+<script>
+import ListaCategorias from './components/ListaCategorias.vue'; // Importamos el componente
+import ListaProducts from './components/ListaProducts.vue';  // Importamos el componente de Productos
+
+
+export default {
+  components: {
+    ListaCategorias,
+    ListaProducts
+  }
+};
+</script>
 
 <style>
 #app {
@@ -12,18 +25,5 @@
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
   color: #2c3e50;
-}
-
-nav {
-  padding: 30px;
-}
-
-nav a {
-  font-weight: bold;
-  color: #2c3e50;
-}
-
-nav a.router-link-exact-active {
-  color: #42b983;
 }
 </style>
