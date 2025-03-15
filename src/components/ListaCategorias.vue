@@ -81,6 +81,7 @@ export default {
           this.categorias.push(data);
           this.mostrarModalAgregar = false;
           this.nuevaCategoria = { name: "" };
+          this.obtenerCategorias();
         } else {
           console.error("Error al agregar categoría");
         }
@@ -107,6 +108,7 @@ export default {
           const index = this.categorias.findIndex(c => c.id === this.categoriaSeleccionada.id);
           this.categorias[index] = { ...this.categoriaSeleccionada };
           this.mostrarModal = false;
+          this.obtenerCategorias();
         } else {
           console.error("Error al actualizar categoría");
         }
@@ -114,6 +116,7 @@ export default {
         console.error(error);
       }
     },
+
     async eliminarCategoria(id) {
       if (!confirm("¿Seguro que quieres eliminar esta categoría?")) return;
 

@@ -65,17 +65,17 @@
     name: "ListaProducts",
     data() {
       return {
-        productos: [], // Productos de la API
-        productoSeleccionado: {}, // Producto en edición
-        nuevoProducto: { name: "", stock: 0, category_id: null }, // Datos del nuevo producto
-        mostrarModal: false, // Controla el modal de edición
-        mostrarModalAgregar: false, // Controla el modal de agregar producto
-        categorias: [], // Categorías disponibles
+        productos: [], 
+        productoSeleccionado: {}, 
+        nuevoProducto: { name: "", stock: 0, category_id: null },
+        mostrarModal: false, 
+        mostrarModalAgregar: false,
+        categorias: [], 
         fields: [
           { key: 'name', label: 'Nombre del Producto' },
           { key: 'category', label: 'Categoría' },
           { key: 'stock', label: 'Stock' },
-          { key: 'actions', label: 'Acciones' } // Nueva columna para editar/eliminar
+          { key: 'actions', label: 'Acciones' } 
         ]
       };
     },
@@ -113,13 +113,15 @@
       },
   
       editarProducto(producto) {
-        this.productoSeleccionado = { ...producto }; // Copia del producto
+        this.productoSeleccionado = { ...producto }; 
         this.mostrarModal = true;
       },
   
       async guardarCambios() {
         try {
-          const response = await fetch(`http://127.0.0.1:8000/api/products/${this.productoSeleccionado.id}`, {
+          const response = await fetch(
+            `http://127.0.0.1:8000/api/products/${this.productoSeleccionado.id}`, 
+            {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -129,8 +131,18 @@
           });
   
           if (response.ok) {
-            this.obtenerProductos();
-          } else {
+      const index = this.productos.findIndex(p => p.id === this.productoSeleccionado.id);
+      this.productos[index] = { ...this.productoSeleccionado };
+      
+      const categoriaIndex = this.categorias.findIndex(c => c.id === this.categoriaSeleccionada.id);
+      if (categoriaIndex !== -1) {
+        this.categorias[categoriaIndex] = { ...this.categoriaSeleccionada };
+      }
+
+      this.mostrarModal = false;
+      this.obtenerProductos();
+      this.obtenerCategorias();
+    } else {
             console.error("Error al actualizar producto");
           }
         } catch (error) {
@@ -157,15 +169,15 @@
       },
   
       mostrarFormularioProducto() {
-        this.nuevoProducto = { name: "", stock: 0, category_id: null }; // Resetear los campos
-        this.mostrarModalAgregar = true; // Mostrar el modal
+        this.nuevoProducto = { name: "", stock: 0, category_id: null }; 
+        this.mostrarModalAgregar = true; 
       },
   
 
 
-      async agregarProducto() {
+    async agregarProducto() {
   try {
-    console.log("Ejecutando agregarProducto...");  // 🟢 Verifica si se ejecuta más de una vez
+    console.log("Ejecutando agregarProducto...");
 
     const response = await fetch("http://127.0.0.1:8000/api/products", {
       method: "POST",
@@ -174,21 +186,39 @@
     });
 
     if (response.ok) {
-      console.log("Producto agregado correctamente");
-      
-      // Opcional: Obtener los datos de nuevo para asegurarte de que no haya duplicados
-      this.obtenerProductos();
+      const data = await response.json();
+      console.log("Producto agregado correctamente:", data);
 
-      // Cerrar modal y resetear formulario
+      // Mostrar un mensaje de éxito al usuario (puedes usar alert o un mensaje en la interfaz)
+      this.mostrarMensaje("Producto agregado correctamente", "success");
+      
+      this.obtenerProductos();
       this.mostrarModalAgregar = false;
       this.nuevoProducto = { name: "", stock: 0, category_id: null };
     } else {
-      console.error("Error al agregar producto, código:", response.status);
+      const errorData = await response.json();
+      console.error("Error al agregar producto, código:", response.status, errorData.message);
+
+      // Mostrar un mensaje de error al usuario
+      this.mostrarMensaje(errorData.message || "Error al agregar producto", "error");
     }
   } catch (error) {
     console.error("Error en la solicitud POST:", error);
+
+    // Mostrar un mensaje de error general al usuario
+    this.mostrarMensaje("Error en la solicitud. Intenta de nuevo.", "error");
   }
+},
+
+// Método para mostrar un mensaje al usuario (puedes mejorar esta lógica si prefieres mostrarlo en la interfaz)
+mostrarMensaje(mensaje, tipo) {
+  this.mensaje = mensaje;
+  this.tipoMensaje = tipo;  // "success" o "error"
+  setTimeout(() => {
+    this.mensaje = ''; // Limpiar el mensaje después de 3 segundos
+  }, 3000);
 }
+
 
 
 
