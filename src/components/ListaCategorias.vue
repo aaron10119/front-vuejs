@@ -5,7 +5,17 @@
      Agregar Categoría
     </b-button>
 
-    <b-table striped hover bordered :items="categorias" :fields="fields">
+    <div>
+    <b-table
+      striped
+      hover
+      bordered
+      :items="categorias"
+      :fields="fields"
+      :per-page="perPage"
+      :current-page="currentPage"
+      @update:current-page="onPageChange"
+    >
       <template #cell(name)="data">
         <b>{{ data.value }}</b>
       </template>
@@ -19,6 +29,16 @@
         </b-button>
       </template>
     </b-table>
+
+    <!-- Paginación -->
+    <b-pagination
+      v-model="currentPage"
+      :total-rows="totalRows"
+      :per-page="perPage"
+      align="center"
+      class="mt-3"
+    />
+  </div>
 
     <!-- Modal para agregar categoría -->
     <b-modal v-model="mostrarModalAgregar" title="Agregar Categoría" @ok="agregarCategoria">
@@ -41,7 +61,9 @@
 </template>
 
 <script>
-export default {
+  import Swal from 'sweetalert2';
+
+  export default {
   data() {
     return {
       categorias: [],
@@ -52,7 +74,10 @@ export default {
       fields: [
         { key: "name", label: "Nombre" },
         { key: "actions", label: "Acciones" }
-      ]
+      ],
+      currentPage: 1, 
+      perPage: 8, 
+      totalRows: 0 
     };
   },
   mounted() {
@@ -63,77 +88,152 @@ export default {
       try {
         const response = await fetch("http://127.0.0.1:8000/api/categories");
         if (!response.ok) throw new Error("Error al obtener categorías");
-        this.categorias = await response.json();
+        const data = await response.json();
+        this.categorias = data; // Asignar los datos a la tabla
+        this.totalRows = data.length; // Total de filas para la paginación
       } catch (error) {
         console.error(error);
       }
     },
-    async agregarCategoria() {
-      try {
-        const response = await fetch("http://127.0.0.1:8000/api/categories", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(this.nuevaCategoria)
-        });
 
-        if (response.ok) {
-          const data = await response.json();
-          this.categorias.push(data);
-          this.mostrarModalAgregar = false;
-          this.nuevaCategoria = { name: "" };
-          this.obtenerCategorias();
-        } else {
-          console.error("Error al agregar categoría");
-        }
-      } catch (error) {
-        console.error(error);
-      }
+    onPageChange(newPage) {
+      this.currentPage = newPage;
     },
+
+    async agregarCategoria() {
+  try {
+    const response = await fetch("http://127.0.0.1:8000/api/categories", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(this.nuevaCategoria)
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      this.categorias.push(data);
+      this.mostrarModalAgregar = false;
+      this.nuevaCategoria = { name: "" };
+      this.obtenerCategorias();
+
+      Swal.fire({
+        icon: 'success',
+        title: '¡Categoría agregada!',
+        text: 'La categoría se ha agregado correctamente.',
+      });
+    } else {
+      console.error("Error al agregar categoría");
+
+      Swal.fire({
+        icon: 'error',
+        title: '¡Error!',
+        text: 'Hubo un problema con la solicitud. Intenta de nuevo.',
+      });
+    }
+  } catch (error) {
+    console.error(error);
+
+    Swal.fire({
+      icon: 'error',
+      title: '¡Error!',
+      text: 'No se permiten espacios, numeros y caracteres especiales',
+    });
+  }
+},
     editarCategoria(categoria) {
       this.categoriaSeleccionada = { ...categoria };
       this.mostrarModal = true;
     },
     async guardarCambios() {
-      try {
-        const response = await fetch(
-          `http://127.0.0.1:8000/api/categories/${this.categoriaSeleccionada.id}`,
-          {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(this.categoriaSeleccionada)
-          }
-        );
-
-        if (response.ok) {
-          const index = this.categorias.findIndex(c => c.id === this.categoriaSeleccionada.id);
-          this.categorias[index] = { ...this.categoriaSeleccionada };
-          this.mostrarModal = false;
-          this.obtenerCategorias();
-        } else {
-          console.error("Error al actualizar categoría");
-        }
-      } catch (error) {
-        console.error(error);
+  try {
+    const response = await fetch(
+      `http://127.0.0.1:8000/api/categories/${this.categoriaSeleccionada.id}`,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(this.categoriaSeleccionada)
       }
-    },
+    );
 
-    async eliminarCategoria(id) {
-      if (!confirm("¿Seguro que quieres eliminar esta categoría?")) return;
+    if (response.ok) {
+      const index = this.categorias.findIndex(c => c.id === this.categoriaSeleccionada.id);
+      this.categorias[index] = { ...this.categoriaSeleccionada };
+      this.mostrarModal = false;
+      this.obtenerCategorias();
 
-      try {
-        const response = await fetch(`http://127.0.0.1:8000/api/categories/${id}`, {
-          method: "DELETE"
-        });
+      Swal.fire({
+        icon: 'success',
+        title: '¡Categoría actualizada!',
+        text: 'La categoría se ha actualizado correctamente.',
+      });
+    } else {
+      console.error("Error al actualizar categoría");
 
-        if (response.ok) {
-          this.categorias = this.categorias.filter(c => c.id !== id);
-        } else {
-          console.error("Error al eliminar categoría");
-        }
-      } catch (error) {
-        console.error(error);
-      }
+      Swal.fire({
+        icon: 'error',
+        title: '¡Error!',
+        text: 'Hubo un problema con la solicitud. Intenta de nuevo.',
+      });
     }
+  } catch (error) {
+    console.error(error);
+
+    Swal.fire({
+      icon: 'error',
+      title: '¡Error!',
+      text: 'No se permiten espacios, numeros y caracteres especiales',
+    });
+  }
+},
+
+async eliminarCategoria(id) {
+  const result = await Swal.fire({
+    title: '¿Estás seguro?',
+    text: "¡No podrás revertir esta acción!",
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#3085d6',
+    cancelButtonColor: '#d33',
+    confirmButtonText: 'Sí, eliminarla!',
+    cancelButtonText: 'Cancelar'
+  });
+
+  if (result.isConfirmed) {
+    try {
+      const response = await fetch(`http://127.0.0.1:8000/api/categories/${id}`, {
+        method: "DELETE"
+      });
+
+      if (response.ok) {
+        this.categorias = this.categorias.filter(c => c.id !== id);
+
+        Swal.fire({
+          icon: 'success',
+          title: '¡Categoría eliminada!',
+          text: 'La categoría ha sido eliminada correctamente.',
+        });
+      } else {
+        console.error("Error al eliminar categoría");
+
+        Swal.fire({
+          icon: 'error',
+          title: '¡Error!',
+          text: 'Hubo un problema al eliminar la categoría. Inténtalo de nuevo.',
+        });
+      }
+    } catch (error) {
+      console.error(error);
+
+      Swal.fire({
+        icon: 'error',
+        title: '¡Error!',
+        text: 'Hubo un problema con la solicitud. Intenta de nuevo.',
+      });
+    }
+  }
+}
+
+
+
   }
 };
 </script>

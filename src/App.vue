@@ -2,7 +2,8 @@
   <div id="app">
     <section>
       <div class="titulos">
-        <h1>Prueba Full Stack</h1>
+        <h1>Prueba Desarrollador Full Stack</h1>
+        <h5>Aarón Hernandez Bueno</h5>
       </div>
       <div class="container">
         <div class="row">

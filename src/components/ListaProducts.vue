@@ -3,30 +3,51 @@
       <h2 class="text-center mb-4">Lista de Productos</h2>
       <b-button variant="primary" class="mb-3" @click="mostrarFormularioProducto">Agregar Producto</b-button>
   
-      <b-table striped hover bordered :items="productos" :fields="fields">
-        <template #cell(name)="data">
-          <b>{{ data.value }}</b>
-        </template>
-  
-        <template #cell(category)="data">
-          <span>{{ data.value }}</span>
-        </template>
-  
-        <template #cell(stock)="data">
-          <span :class="{'text-danger': data.value < 3, 'text-success': data.value >= 3}">
-            {{ data.value }}
-          </span>
-        </template>
-  
-        <template #cell(actions)="data">
-          <b-button variant="warning" size="sm" @click="editarProducto(data.item)">
-            ✏️
-          </b-button>
-          <b-button variant="danger" size="sm" class="ml-2" @click="eliminarProducto(data.item.id)">
-            🗑
-          </b-button>
-        </template>
-      </b-table>
+      <div>
+    <!-- Tabla con paginación -->
+    <b-table
+      striped
+      hover
+      bordered
+      :items="productos"
+      :fields="fields"
+      :current-page="currentPage"
+      :per-page="perPage"
+      :total-rows="totalRows"
+    >
+      <template #cell(name)="data">
+        <b>{{ data.value }}</b>
+      </template>
+
+      <template #cell(category)="data">
+        <span>{{ data.value }}</span>
+      </template>
+
+      <template #cell(stock)="data">
+        <span :class="{'text-danger': data.value < 3, 'text-success': data.value >= 3}">
+          {{ data.value }}
+        </span>
+      </template>
+
+      <template #cell(actions)="data">
+        <b-button variant="warning" size="sm" @click="editarProducto(data.item)">
+          ✏️
+        </b-button>
+        <b-button variant="danger" size="sm" class="ml-2" @click="eliminarProducto(data.item.id)">
+          🗑
+        </b-button>
+      </template>
+    </b-table>
+
+    <!-- Paginador -->
+    <b-pagination
+      v-model="currentPage"
+      :total-rows="totalRows"
+      :per-page="perPage"
+      align="center"
+      class="mt-3"
+    ></b-pagination>
+  </div>
   
       <b-modal v-model="mostrarModalAgregar" title="Agregar Producto" @ok="agregarProducto">
         <b-form>
@@ -61,6 +82,8 @@
 
   
   <script>
+  import Swal from 'sweetalert2';
+  
   export default {
     name: "ListaProducts",
     data() {
@@ -75,8 +98,11 @@
           { key: 'name', label: 'Nombre del Producto' },
           { key: 'category', label: 'Categoría' },
           { key: 'stock', label: 'Stock' },
-          { key: 'actions', label: 'Acciones' } 
-        ]
+          { key: 'actions', label: 'Acciones' }
+        ],
+        currentPage: 1, 
+      perPage: 8, 
+      totalRows: 0 
       };
     },
     mounted() {
@@ -85,19 +111,29 @@
     },
     methods: {
       async obtenerProductos() {
-        try {
-          const response = await fetch("http://127.0.0.1:8000/api/products/categories");
-          const data = await response.json();
-          this.productos = data.map(producto => ({
-            id: producto.id,
-            name: producto.name,
-            category: producto.category.name,
-            stock: producto.stock
-          }));
-        } catch (error) {
-          console.error("Error al obtener productos:", error);
-        }
-      },
+  try {
+    const response = await fetch("http://127.0.0.1:8000/api/products/categories");
+    const data = await response.json();
+    
+    if (Array.isArray(data)) {
+      // Aquí estás estructurando los datos correctamente según la API que mencionas
+      this.productos = data.map(producto => ({
+        id: producto.id,
+        name: producto.name,
+        stock: producto.stock,
+        category: producto.category.name,  // Accediendo al nombre de la categoría
+      }));
+      this.totalRows = data.length;  // O ajusta según lo que necesitas
+    } else {
+      console.error("La estructura de los datos no es la esperada:", data);
+    }
+  } catch (error) {
+    console.error("Error al obtener productos:", error);
+  }
+}
+
+
+,
   
       async obtenerCategorias() {
         try {
@@ -111,6 +147,12 @@
           console.error("Error al obtener categorías:", error);
         }
       },
+
+      
+    onPageChange(newPage) {
+      this.currentPage = newPage;
+      this.obtenerProductos(); 
+    },
   
       editarProducto(producto) {
         this.productoSeleccionado = { ...producto }; 
@@ -122,27 +164,32 @@
           const response = await fetch(
             `http://127.0.0.1:8000/api/products/${this.productoSeleccionado.id}`, 
             {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              name: this.productoSeleccionado.name,
-              stock: this.productoSeleccionado.stock
-            })
-          });
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                name: this.productoSeleccionado.name,
+                stock: this.productoSeleccionado.stock
+              })
+            });
   
           if (response.ok) {
-      const index = this.productos.findIndex(p => p.id === this.productoSeleccionado.id);
-      this.productos[index] = { ...this.productoSeleccionado };
-      
-      const categoriaIndex = this.categorias.findIndex(c => c.id === this.categoriaSeleccionada.id);
-      if (categoriaIndex !== -1) {
-        this.categorias[categoriaIndex] = { ...this.categoriaSeleccionada };
-      }
-
-      this.mostrarModal = false;
-      this.obtenerProductos();
-      this.obtenerCategorias();
-    } else {
+            const index = this.productos.findIndex(p => p.id === this.productoSeleccionado.id);
+            this.productos[index] = { ...this.productoSeleccionado };
+  
+            const categoriaIndex = this.categorias.findIndex(c => c.id === this.categoriaSeleccionada.id);
+            if (categoriaIndex !== -1) {
+              this.categorias[categoriaIndex] = { ...this.categoriaSeleccionada };
+            }
+  
+            this.mostrarModal = false;
+            this.obtenerProductos();
+            this.obtenerCategorias();
+            Swal.fire({
+              icon: 'success',
+              title: '¡Producto actualizado!',
+              text: 'El producto se ha actualizado correctamente.',
+            });
+          } else {
             console.error("Error al actualizar producto");
           }
         } catch (error) {
@@ -150,32 +197,7 @@
         }
       },
   
-      async eliminarProducto(id) {
-        if (!confirm("¿Estás seguro de eliminar este producto?")) return;
-  
-        try {
-          const response = await fetch(`http://127.0.0.1:8000/api/products/${id}`, {
-            method: "DELETE"
-          });
-  
-          if (response.ok) {
-            this.productos = this.productos.filter(producto => producto.id !== id);
-          } else {
-            console.error("Error al eliminar producto");
-          }
-        } catch (error) {
-          console.error("Error en la solicitud DELETE:", error);
-        }
-      },
-  
-      mostrarFormularioProducto() {
-        this.nuevoProducto = { name: "", stock: 0, category_id: null }; 
-        this.mostrarModalAgregar = true; 
-      },
-  
-
-
-    async agregarProducto() {
+      async agregarProducto() {
   try {
     console.log("Ejecutando agregarProducto...");
 
@@ -189,9 +211,12 @@
       const data = await response.json();
       console.log("Producto agregado correctamente:", data);
 
-      // Mostrar un mensaje de éxito al usuario (puedes usar alert o un mensaje en la interfaz)
-      this.mostrarMensaje("Producto agregado correctamente", "success");
-      
+      Swal.fire({
+        icon: 'success',
+        title: '¡Producto agregado!',
+        text: 'El producto se ha agregado correctamente.',
+      });
+
       this.obtenerProductos();
       this.mostrarModalAgregar = false;
       this.nuevoProducto = { name: "", stock: 0, category_id: null };
@@ -199,27 +224,75 @@
       const errorData = await response.json();
       console.error("Error al agregar producto, código:", response.status, errorData.message);
 
-      // Mostrar un mensaje de error al usuario
-      this.mostrarMensaje(errorData.message || "Error al agregar producto", "error");
+      Swal.fire({
+        icon: 'error',
+        title: '¡Error!',
+        text: errorData.message || "Error al agregar producto.",
+      });
     }
   } catch (error) {
     console.error("Error en la solicitud POST:", error);
 
-    // Mostrar un mensaje de error general al usuario
-    this.mostrarMensaje("Error en la solicitud. Intenta de nuevo.", "error");
+    Swal.fire({
+      icon: 'error',
+      title: '¡Error!',
+      text: 'No admite caracteres especiales',
+    });
   }
 },
+  
+      mostrarFormularioProducto() {
+        this.nuevoProducto = { name: "", stock: 0, category_id: null }; 
+        this.mostrarModalAgregar = true; 
+      },
+  
+      async eliminarProducto(id) {
+  const result = await Swal.fire({
+    title: '¿Estás seguro?',
+    text: "¡No podrás revertir esta acción!",
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#3085d6',
+    cancelButtonColor: '#d33',
+    confirmButtonText: 'Sí, eliminarlo!',
+    cancelButtonText: 'Cancelar'
+  });
 
-// Método para mostrar un mensaje al usuario (puedes mejorar esta lógica si prefieres mostrarlo en la interfaz)
-mostrarMensaje(mensaje, tipo) {
-  this.mensaje = mensaje;
-  this.tipoMensaje = tipo;  // "success" o "error"
-  setTimeout(() => {
-    this.mensaje = ''; // Limpiar el mensaje después de 3 segundos
-  }, 3000);
+  if (result.isConfirmed) {
+    try {
+      const response = await fetch(`http://127.0.0.1:8000/api/products/${id}`, {
+        method: "DELETE"
+      });
+
+      if (response.ok) {
+        this.productos = this.productos.filter(producto => producto.id !== id);
+
+        Swal.fire({
+          icon: 'success',
+          title: '¡Producto eliminado!',
+          text: 'El producto ha sido eliminado correctamente.',
+        });
+      } else {
+        console.error("Error al eliminar producto");
+
+        Swal.fire({
+          icon: 'error',
+          title: '¡Error!',
+          text: 'Hubo un problema al eliminar el producto. Inténtalo de nuevo.',
+        });
+      }
+    } catch (error) {
+      console.error("Error en la solicitud DELETE:", error);
+
+      Swal.fire({
+        icon: 'error',
+        title: '¡Error!',
+        text: 'Hubo un problema con la solicitud. Intenta de nuevo.',
+      });
+    }
+  }
 }
-
-
+,
 
 
 
