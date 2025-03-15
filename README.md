@@ -1,24 +1,41 @@
-# vuefront-rest
 
-## Project setup
-```
-npm install
-```
+# Proyecto VUEjs FRONT REST
 
-### Compiles and hot-reloads for development
-```
-npm run serve
-```
+Este proyecto utiliza Vue.js para consumir una API de Laravel.
 
-### Compiles and minifies for production
+## Pasos para iniciar
+
+### 1. Clona el repositorio de Git:
 ```
-npm run build
+   git clone <URL_DEL_REPOSITORIO>
 ```
 
-### Lints and fixes files
+### 2. Ejecuta el proyecto con el siguiente comando:
+
 ```
-npm run lint
+   npm run serve
+```
+### 3. En la carpeta de components encontrarás las funciones fetch para consumir la API de Laravel. Ejemplo de uso:
+
+```
+methods: {
+  async obtenerCategorias() {
+    try {
+      const response = await fetch("http://127.0.0.1:8000/api/categories");
+      if (!response.ok) throw new Error("Error al obtener categorías");
+      const data = await response.json();
+      this.categorias = data; // Asignar los datos a la tabla
+      this.totalRows = data.length; // Total de filas para la paginación
+    } catch (error) {
+      console.error(error);
+    }
+  },
+}
 ```
 
-### Customize configuration
-See [Configuration Reference](https://cli.vuejs.org/config/).
+De ser necesario, cambia el DNS http://127.0.0.1:8000/api/categories a la URL correcta de tu API.
+
+
+NOTA: Se estarán realizando cambios en los commits para encontrar errores, mejorar el código o agregar contenido adicional al proyecto.
+
+### Por Aaron Hernandez Bueno
