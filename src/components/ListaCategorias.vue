@@ -64,6 +64,7 @@
   import Swal from 'sweetalert2';
 
   export default {
+
   data() {
     return {
       categorias: [],
@@ -80,10 +81,13 @@
       totalRows: 0 
     };
   },
+
   mounted() {
     this.obtenerCategorias();
   },
+
   methods: {
+    
     async obtenerCategorias() {
       try {
         const response = await fetch("http://127.0.0.1:8000/api/categories");
@@ -203,21 +207,21 @@ async eliminarCategoria(id) {
         method: "DELETE"
       });
 
+      const data = await response.json();
+
       if (response.ok) {
         this.categorias = this.categorias.filter(c => c.id !== id);
 
         Swal.fire({
           icon: 'success',
           title: '¡Categoría eliminada!',
-          text: 'La categoría ha sido eliminada correctamente.',
+          text: data.message, 
         });
       } else {
-        console.error("Error al eliminar categoría");
-
         Swal.fire({
           icon: 'error',
           title: '¡Error!',
-          text: 'Hubo un problema al eliminar la categoría. Inténtalo de nuevo.',
+          text: data.message || 'Hubo un problema al eliminar la categoría. Inténtalo de nuevo.', 
         });
       }
     } catch (error) {
@@ -231,8 +235,6 @@ async eliminarCategoria(id) {
     }
   }
 }
-
-
 
   }
 };

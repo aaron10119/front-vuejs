@@ -2,8 +2,7 @@
     <div class="container mt-4">
       <h2 class="text-center mb-4">Lista de Productos</h2>
       <b-button variant="primary" class="mb-3" @click="mostrarFormularioProducto">Agregar Producto</b-button>
-  
-      <div>
+    <div>
     <!-- Tabla con paginación -->
     <b-table
       striped
@@ -24,10 +23,18 @@
       </template>
 
       <template #cell(stock)="data">
-        <span :class="{'text-danger': data.value < 3, 'text-success': data.value >= 3}">
+      <b-tooltip :target="'stock-' + data.index" placement="top">
+               {{ data.value < 3 ? 'Stock bajo, considera reabastecer' : 'Stock suficiente' }}
+       </b-tooltip>
+  
+      <span 
+          :id="'stock-' + data.index"
+          :class="{'text-danger': data.value < 3, 'text-success': data.value >= 3}">
           {{ data.value }}
-        </span>
+      </span>
       </template>
+
+
 
       <template #cell(actions)="data">
         <b-button variant="warning" size="sm" @click="editarProducto(data.item)">
@@ -105,11 +112,17 @@
       totalRows: 0 
       };
     },
+
+
     mounted() {
       this.obtenerProductos();
       this.obtenerCategorias();
     },
+
+
     methods: {
+
+
       async obtenerProductos() {
   try {
     const response = await fetch("http://127.0.0.1:8000/api/products/categories");
@@ -121,9 +134,9 @@
         id: producto.id,
         name: producto.name,
         stock: producto.stock,
-        category: producto.category.name,  // Accediendo al nombre de la categoría
+        category: producto.category.name, 
       }));
-      this.totalRows = data.length;  // O ajusta según lo que necesitas
+      this.totalRows = data.length;  
     } else {
       console.error("La estructura de los datos no es la esperada:", data);
     }
